@@ -1,0 +1,89 @@
+{% extends 'layout.html' %}
+{% block title %}Quản lý sinh viên{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Quản lý sinh viên</h2>
+  </div>
+
+  <!-- Search and filter -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-3">
+        <div class="col-md-5">
+          <input type="text" name="search" class="form-control" placeholder="Tìm theo tên hoặc MSSV" value="{{ search }}">
+        </div>
+        <div class="col-md-4">
+          <select name="class_admin_id" class="form-select">
+            <option value="">-- Tất cả lớp hành chính --</option>
+            {% for ca in class_admins %}
+            <option value="{{ ca.id }}" {% if class_filter == ca.id|string %}selected{% endif %}>{{ ca.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-primary">Lọc</button>
+          <a href="{{ url_for('admin.students_list') }}" class="btn btn-secondary">Reset</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Students table -->
+  <div class="card">
+    <div class="card-header">
+      Danh sách sinh viên ({{ students|length }})
+    </div>
+    <div class="card-body">
+      {% if students %}
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>STT</th>
+              <th>MSSV</th>
+              <th>Họ tên</th>
+              <th>Giới tính</th>
+              <th>Ngày sinh</th>
+              <th>Lớp hành chính</th>
+              <th>Số lớp học phần</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for student in students %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>{{ student.mssv }}</td>
+              <td>{{ student.name }}</td>
+              <td>{{ student.gender if student.gender else '<span class="text-muted">--</span>' | safe }}</td>
+              <td>{{ student.date_of_birth.strftime('%d/%m/%Y') if student.date_of_birth else '<span class="text-muted">--</span>' | safe }}</td>
+              <td>
+                {% if student.class_admin %}
+                <a href="{{ url_for('admin.class_admins_detail', class_admin_id=student.class_admin_id) }}" class="text-decoration-none">
+                  {{ student.class_admin.name }}
+                </a>
+                {% else %}
+                <span class="text-muted">--</span>
+                {% endif %}
+              </td>
+              <td>{{ student.enrollments|length }}</td>
+              <td>
+                <a href="{{ url_for('admin.students_edit', student_id=student.id) }}" class="btn btn-sm btn-warning">Sửa</a>
+                <form method="post" action="{{ url_for('admin.students_delete', student_id=student.id) }}" style="display:inline;" 
+                      onsubmit="return confirm('Bạn có chắc muốn xóa sinh viên này?\n\nTất cả dữ liệu liên quan sẽ bị xóa:\n- Lớp hành chính\n- Lớp học phần\n- Dữ liệu điểm danh\n- Tài khoản đăng nhập');">
+                  <button type="submit" class="btn btn-sm btn-danger">Xóa</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted">Không có sinh viên nào.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

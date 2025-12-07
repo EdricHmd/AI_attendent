@@ -1,0 +1,108 @@
+{% extends 'layout.html' %}
+{% block title %}Student Dashboard{% endblock %}
+{% block breadcrumb_nav %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('student.dashboard') }}">Trang chủ</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Sinh viên</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-3">
+  <h3 class="mb-0">{{ student.name if student else 'Sinh viên' }}</h3>
+  <div class="ms-auto">
+    {# status badge placed before register button #}
+    {% if student %}
+    {% if student.embedding %}
+    <span class="badge bg-success me-2 align-middle">Đã đăng kí khuôn mặt</span>
+    {% else %}
+    <span class="badge bg-danger me-2 align-middle">Chưa đăng kí khuôn mặt</span>
+    {% endif %}
+    {% endif %}
+    {%- if student and student.embedding -%}
+    <a class="btn btn-sm btn-primary" href="{{ url_for('student.register_face') }}">Đăng ký lại khuôn mặt</a>
+    {%- else -%}
+    <a class="btn btn-sm btn-primary" href="{{ url_for('student.register_face') }}">Đăng ký khuôn mặt</a>
+    {%- endif %}
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('student.attendance_history') }}">Lịch sử điểm danh</a>
+    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('student.profile') }}">Hồ sơ</a>
+  </div>
+</div>
+
+<!-- {# show registration status #}
+{% if student %}
+<p class="text-muted">Trạng thái: <strong>{% if student.embedding %}Đã đăng kí khuôn mặt{% else %}Chưa đăng kí khuôn
+    mặt{% endif %}</strong></p>
+{% endif %} -->
+
+{% if class_admin %}
+<p class="mb-4">Lớp hành chính: <strong>{{ class_admin.name }}</strong></p>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Lớp học phần của bạn</span>
+        {% if semesters %}
+        <div class="d-flex align-items-center gap-2">
+          <label for="semesterFilter" class="mb-0 text-muted small">Học kỳ:</label>
+          <select id="semesterFilter" class="form-select form-select-sm" style="width: auto;" onchange="window.location.href='{{ url_for('student.dashboard') }}?semester_id=' + this.value">
+            <option value="">Tất cả</option>
+            {% for sem in semesters %}
+            <option value="{{ sem.id }}" {% if sem.id == selected_semester_id %}selected{% endif %}>
+              {{ sem.name }}
+              {% if sem.is_active %}🔴{% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+      </div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Tên lớp</th>
+              <th>Học kỳ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in sections %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>{{ s.name }}</td>
+              <td>{{ s.semester_obj.name if s.semester_obj else '' }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="3" class="text-center text-muted">
+                {% if selected_semester_id %}
+                Không có lớp học phần trong học kỳ này
+                {% else %}
+                Chưa có lớp học phần
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Hướng dẫn nhanh</div>
+      <div class="card-body">
+        <ol class="mb-0">
+          <li>Mở "Đăng ký khuôn mặt" và bấm Bắt đầu, nhìn vào camera.</li>
+          <li>Đi học: giảng viên mở điểm danh realtime, bạn đứng trước camera.</li>
+          <li>Xem lại kết quả tại "Lịch sử điểm danh".</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

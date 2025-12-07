@@ -1,0 +1,78 @@
+{% extends 'layout.html' %}
+{% block title %}Danh sách sinh viên - {{ class_section.name }}{% endblock %}
+{% block breadcrumb_nav %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('teacher.dashboard') }}">Trang chủ</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('teacher.dashboard') }}">Lớp học</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ class_section.name }}</li>
+    </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h3>Danh sách sinh viên</h3>
+        <p class="text-muted mb-0">
+            <strong>Lớp:</strong> {{ class_section.name }} | 
+            <strong>Học phần:</strong> {{ class_section.course.name if class_section.course else 'N/A' }} |
+            <strong>Tổng số:</strong> {{ students|length }} sinh viên
+        </p>
+    </div>
+    {% if students %}
+    <a href="{{ url_for('teacher.export_class_students', class_section_id=class_section.id) }}" 
+       class="btn btn-success">
+        <i class="bi bi-file-earmark-excel"></i> Export Excel
+    </a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>STT</th>
+                        <th>MSSV</th>
+                        <th>Họ tên</th>
+                        <th>Giới tính</th>
+                        <th>Ngày sinh</th>
+                        <th>Lớp hành chính</th>
+                        <th>Đăng ký khuôn mặt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in students %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td><strong>{{ s.mssv }}</strong></td>
+                        <td>{{ s.name }}</td>
+                        <td>{{ s.gender or '-' }}</td>
+                        <td>{{ s.date_of_birth.strftime('%d/%m/%Y') if s.date_of_birth else '-' }}</td>
+                        <td>
+                            {% if s.class_admin %}
+                            <span class="badge bg-secondary">{{ s.class_admin.name }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.get_embedding() %}
+                            <span class="badge bg-success">Đã đăng ký</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">Chưa đăng ký</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">Chưa có sinh viên nào trong lớp</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

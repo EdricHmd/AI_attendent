@@ -1,0 +1,262 @@
+{% extends 'layout.html' %}
+{% block title %}Báo cáo điểm danh - {{ class_section.name }}{% endblock %}
+{% block breadcrumb_nav %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('teacher.dashboard') }}">Trang chủ</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('teacher.report_index') }}">Báo cáo</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ class_section.name }}</li>
+    </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="mb-3">
+    <h3>Báo cáo điểm danh</h3>
+    <p class="text-muted mb-0">
+        <strong>Lớp:</strong> {{ class_section.name }} | 
+        <strong>Học phần:</strong> {{ class_section.course.name if class_section.course else 'N/A' }}
+    </p>
+</div>
+<div class="mb-3 d-flex gap-2">
+    <a class="btn btn-success"
+        href="{{ url_for('teacher.report_export', class_section_id=class_section.id) }}">Xuất Excel</a>
+    <a class="btn btn-outline-secondary"
+        href="{{ url_for('teacher.report_csv', class_section_id=class_section.id) }}">Xuất CSV</a>
+    <div class="btn-group" role="group" aria-label="Chế độ hiển thị">
+        <input type="radio" class="btn-check" name="viewMode" id="viewTable" autocomplete="off" checked>
+        <label class="btn btn-outline-primary" for="viewTable">Bảng số liệu</label>
+        
+        <input type="radio" class="btn-check" name="viewMode" id="viewChart" autocomplete="off">
+        <label class="btn btn-outline-primary" for="viewChart">Biểu đồ</label>
+    </div>
+</div>
+
+<!-- Bảng số liệu -->
+<div id="tableView">
+<div class="table-responsive">
+<table class="table table-bordered table-sm excel-table">
+    <thead class="table-light">
+        <tr>
+            <th class="text-center align-middle" style="width: 60px;">STT</th>
+            <th class="text-center align-middle" style="width: 100px;">MSSV</th>
+            <th class="text-center align-middle" style="min-width: 150px;">Họ tên</th>
+            {% for i in range(1, (course_total or sessions|length) + 1) %}
+            {% if i <= sessions|length %}
+            {% set s = sessions[i-1] %}
+            {% set bucket_name = {'morning': 'Sáng', 'afternoon': 'Chiều', 'evening': 'Tối'}.get(s.time_bucket, s.time_bucket) %}
+            <th class="text-center align-middle" style="min-width: 100px;">Buổi {{ s.session_number }}<br><small class="text-muted">{{ bucket_name }}<br>{{ s.session_date.strftime('%d/%m') if s.session_date else '' }}</small></th>
+            {% else %}
+            <th class="text-center align-middle" style="min-width: 80px;">Buổi {{ i }}</th>
+            {% endif %}
+            {% endfor %}
+            <th class="text-center align-middle" style="width: 100px;">Đã điểm danh</th>
+            <th class="text-center align-middle" style="width: 100px;">Tổng vắng</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr>
+            <td class="text-center">{{ loop.index }}</td>
+            <td class="text-center">{{ row.mssv }}</td>
+            <td class="text-start name">{{ row.name }}</td>
+            {% for i in range(0, (course_total or sessions|length)) %}
+            {% if i < row.present_list|length %}
+                <td class="text-center {% if row.present_list[i] %}text-success{% else %}text-danger{% endif %}">
+                    {{ 'có mặt' if row.present_list[i] else 'vắng' }}
+                </td>
+            {% else %}
+                <td class="text-center text-muted">-</td>
+            {% endif %}
+            {% endfor %}
+            <td class="text-center"><strong class="text-success">{{ row.present_count }}</strong></td>
+            <td class="text-center"><strong class="text-danger">{{ row.absent_count }}</strong></td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="{{ (course_total or sessions|length) + 5 }}" class="text-center text-muted py-4">Không có sinh viên
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+</div>
+
+<style>
+.excel-table {
+    font-size: 0.9rem;
+}
+.excel-table thead th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    border: 1px solid #dee2e6;
+    padding: 0.5rem;
+    vertical-align: middle;
+}
+.excel-table tbody td {
+    border: 1px solid #dee2e6;
+    padding: 0.4rem;
+    vertical-align: middle;
+}
+.excel-table tbody td.name {
+    font-weight: 500;
+}
+.excel-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+</style>
+
+<!-- Biểu đồ -->
+<div id="chartView" style="display: none;">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">Biểu đồ điểm danh theo sinh viên</div>
+                <div class="card-body">
+                    <canvas id="attendanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">Thống kê tổng quan</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h5 class="text-muted small">Tổng số sinh viên</h5>
+                        <h3 class="mb-0" id="totalStudents">{{ rows|length }}</h3>
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <h5 class="text-muted small">Số buổi đã điểm danh</h5>
+                        <h3 class="mb-0" id="totalSessions">{{ sessions|length }}</h3>
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <h5 class="text-muted small">Tỷ lệ điểm danh trung bình</h5>
+                        <h3 class="mb-0" id="avgAttendance">
+                            {% if rows|length > 0 and sessions|length > 0 %}
+                            {{ "%.1f"|format((rows|sum(attribute='present_count') / (rows|length * sessions|length)) * 100) }}%
+                            {% else %}
+                            0%
+                            {% endif %}
+                        </h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    // Dữ liệu từ server
+    const reportData = {
+        students: [
+            {% for row in rows %}
+            {
+                name: {{ row.name | tojson }},
+                presentCount: {{ row.present_count }},
+                absentCount: {{ row.absent_count }},
+                presentList: {{ row.present_list | tojson }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ],
+        totalSessions: {{ sessions|length }}
+    };
+
+    // Toggle view
+    const viewTable = document.getElementById('viewTable');
+    const viewChart = document.getElementById('viewChart');
+    const tableView = document.getElementById('tableView');
+    const chartView = document.getElementById('chartView');
+    
+    let chart = null;
+
+    viewTable.addEventListener('change', function() {
+        if (this.checked) {
+            tableView.style.display = 'block';
+            chartView.style.display = 'none';
+        }
+    });
+
+    viewChart.addEventListener('change', function() {
+        if (this.checked) {
+            tableView.style.display = 'none';
+            chartView.style.display = 'block';
+            if (!chart) {
+                initChart();
+            }
+        }
+    });
+
+    function initChart() {
+        const ctx = document.getElementById('attendanceChart').getContext('2d');
+        
+        // Chuẩn bị dữ liệu cho biểu đồ
+        const labels = reportData.students.map(s => s.name);
+        const presentData = reportData.students.map(s => s.presentCount);
+        const absentData = reportData.students.map(s => s.absentCount);
+
+        chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Có mặt',
+                        data: presentData,
+                        backgroundColor: 'rgba(25, 135, 84, 0.7)',
+                        borderColor: 'rgba(25, 135, 84, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Vắng',
+                        data: absentData,
+                        backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                        borderColor: 'rgba(220, 53, 69, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    x: {
+                        stacked: false,
+                        ticks: {
+                            autoSkip: false,
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        stacked: false,
+                        beginAtZero: true,
+                        max: reportData.totalSessions,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: function(context) {
+                                const total = reportData.totalSessions;
+                                const value = context.parsed.y;
+                                const percent = ((value / total) * 100).toFixed(1);
+                                return `${percent}% (${value}/${total})`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

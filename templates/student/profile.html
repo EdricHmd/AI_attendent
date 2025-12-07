@@ -1,0 +1,43 @@
+{% extends 'layout.html' %}
+{% block title %}Hồ sơ sinh viên{% endblock %}
+{% block breadcrumb_nav %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('student.dashboard') }}">Trang chủ</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Hồ sơ</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<h3>Hồ sơ</h3>
+{% if student %}
+<form method="post">
+  <div class="mb-3">
+    <label class="form-label">Họ tên</label>
+    <input class="form-control" name="name" required value="{{ student.name }}" placeholder="Họ và tên" title="Tên" />
+  </div>
+  <div class="mb-3">
+    <label class="form-label">MSSV</label>
+    <input class="form-control" value="{{ student.mssv }}" disabled title="MSSV" placeholder="MSSV" />
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Giới tính</label>
+    <select class="form-select" name="gender">
+      <option value="">-- Chọn giới tính --</option>
+      <option value="Nam" {% if student.gender == 'Nam' %}selected{% endif %}>Nam</option>
+      <option value="Nữ" {% if student.gender == 'Nữ' %}selected{% endif %}>Nữ</option>
+      <option value="Khác" {% if student.gender == 'Khác' %}selected{% endif %}>Khác</option>
+    </select>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Ngày sinh</label>
+    <input type="date" class="form-control" name="date_of_birth" 
+           value="{% if student.date_of_birth %}{{ student.date_of_birth.strftime('%Y-%m-%d') }}{% endif %}" 
+           placeholder="dd/mm/yyyy" title="Ngày sinh" />
+  </div>
+  <button type="submit" class="btn btn-primary">Lưu</button>
+</form>
+{% else %}
+<p>Không tìm thấy thông tin sinh viên.</p>
+{% endif %}
+{% endblock %}

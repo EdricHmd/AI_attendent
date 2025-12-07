@@ -1,0 +1,53 @@
+{% extends 'layout.html' %}
+{% block title %}Thêm sinh viên - {{ class_admin.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h4 class="mb-0">Thêm sinh viên vào lớp {{ class_admin.name }}</h4>
+      </div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('admin.class_admins_add_student', class_admin_id=class_admin.id) }}">
+          <div class="mb-3">
+            <label for="name" class="form-label">Tên sinh viên <span class="text-danger">*</span></label>
+            <input type="text" 
+                   class="form-control" 
+                   id="name" 
+                   name="name" 
+                   placeholder="Nhập tên sinh viên" 
+                   required>
+          </div>
+          
+          <div class="mb-3">
+            <label for="mssv" class="form-label">MSSV <span class="text-danger">*</span></label>
+            <input type="text" 
+                   class="form-control" 
+                   id="mssv" 
+                   name="mssv" 
+                   placeholder="Nhập mã số sinh viên" 
+                   required>
+            <small class="text-muted">MSSV sẽ được dùng làm tài khoản và mật khẩu đăng nhập</small>
+          </div>
+          
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> 
+            Sinh viên sẽ được thêm vào lớp <strong>{{ class_admin.name }}</strong>
+          </div>
+          
+          <div class="d-flex justify-content-between">
+            <a href="{{ url_for('admin.class_admins_detail', class_admin_id=class_admin.id) }}" 
+               class="btn btn-secondary">
+              <i class="bi bi-arrow-left"></i> Hủy
+            </a>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-person-plus"></i> Thêm sinh viên
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

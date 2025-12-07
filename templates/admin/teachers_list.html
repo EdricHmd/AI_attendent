@@ -1,0 +1,40 @@
+{% extends 'layout.html' %}
+{% block title %}Quản lý giảng viên{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>Giảng viên</h3>
+  <a class="btn btn-primary" href="{{ url_for('admin.teachers_create') }}">Thêm</a>
+</div>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>STT</th>
+      <th>Họ tên</th>
+      <th>Email</th>
+      <th>Tài khoản</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in teachers %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ t.name }}</td>
+      <td>{{ t.email or '' }}</td>
+      <td>{{ t.user.username }}</td>
+      <td class="text-end">
+        <a class="btn btn-sm btn-secondary" href="{{ url_for('admin.teachers_edit', teacher_id=t.id) }}">Sửa</a>
+        <form action="{{ url_for('admin.teachers_delete', teacher_id=t.id) }}" method="post" class="d-inline"
+          onsubmit="return confirm('Xóa giảng viên?');">
+          <button type="submit" class="btn btn-sm btn-danger">Xóa</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="5">Chưa có giảng viên</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

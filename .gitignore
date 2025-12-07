@@ -1,0 +1,51 @@
+# Python & env
+venv/
+.venv/
+.env
+.env.*
+
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+
+# SQLite DB and backups
+instance/
+*.db
+*.db.bak*
+*.db-journal
+
+# Models / weights
+*.pt
+yolov8n-face.pt
+models/*.pt
+
+# IDE / editor
+.vscode/
+.idea/
+
+# Uploads / runtime
+static/uploads/
+logs/
+
+# Documentation (not for Git)
+docs/
+
+# Scripts (development/testing only)
+scripts/
+
+# Migrations (managed separately)
+migrations/versions/
+
+# Distribution
+dist/
+build/
+*.egg-info/
+
+# Other
+*.log
+
+# Temporary files
+tmp_*.py
+*_test.py
+_debug_*.py
+_test_*.py

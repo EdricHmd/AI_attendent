@@ -1,0 +1,257 @@
+{% extends 'layout.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block breadcrumb_nav %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Trang chủ</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Quản trị</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-3">
+  <h3 class="mb-0">Quản trị</h3>
+  <div class="ms-auto">
+    <a class="btn btn-sm btn-primary" href="{{ url_for('admin.class_sections_create') }}">+ Tạo lớp HP</a>
+  </div>
+</div>
+
+{% if current_semester %}
+<div class="alert alert-info mb-3">
+  <i class="fas fa-calendar-alt me-2"></i>
+  <strong>Học kỳ hiện tại:</strong> {{ current_semester.name }}
+  <span class="ms-2 text-muted">(Dữ liệu biểu đồ chỉ hiển thị cho học kỳ này)</span>
+</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4 col-lg-2">
+    <a href="{{ url_for('admin.class_admins_list') }}" class="text-decoration-none">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <div class="fs-4 fw-bold">{{ total_students }}</div>
+          <div class="text-muted">Sinh viên</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <a href="{{ url_for('admin.teachers_list') }}" class="text-decoration-none">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <div class="fs-4 fw-bold">{{ total_teachers }}</div>
+          <div class="text-muted">Giảng viên</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <a href="{{ url_for('admin.class_admins_list') }}" class="text-decoration-none">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <div class="fs-4 fw-bold">{{ total_class_admins }}</div>
+          <div class="text-muted">Lớp hành chính</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <a href="{{ url_for('admin.courses_list') }}" class="text-decoration-none">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <div class="fs-4 fw-bold">{{ total_courses }}</div>
+          <div class="text-muted">Học phần</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <a href="{{ url_for('admin.class_sections_list') }}" class="text-decoration-none">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <div class="fs-4 fw-bold">{{ total_sections }}</div>
+          <div class="text-muted">Lớp học phần</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <a href="{{ url_for('admin.report_attendance') }}" class="text-decoration-none">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <div class="fs-4 fw-bold"><span class="text-primary">Báo cáo</span></div>
+          <div class="text-muted">Điểm danh</div>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header bg-success text-white">Top 10 lớp có tỷ lệ điểm danh cao nhất</div>
+      <div class="card-body" style="height: 400px;">
+        {% if class_stats %}
+        <canvas id="highAttendanceChart"></canvas>
+        {% else %}
+        <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+          <div class="text-center">
+            <i class="fas fa-chart-bar fa-3x mb-3"></i>
+            <p>Chưa có dữ liệu điểm danh trong 7 ngày qua</p>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header bg-danger text-white">Top 10 lớp có tỷ lệ vắng cao nhất</div>
+      <div class="card-body" style="height: 400px;">
+        {% if class_stats %}
+        <canvas id="lowAttendanceChart"></canvas>
+        {% else %}
+        <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+          <div class="text-center">
+            <i class="fas fa-chart-bar fa-3x mb-3"></i>
+            <p>Chưa có dữ liệu điểm danh trong 7 ngày qua</p>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Biểu đồ top lớp có tỷ lệ điểm danh cao/thấp nhất
+document.addEventListener('DOMContentLoaded', function() {
+  {% if class_stats %}
+  // Get class stats from backend (calculated based on student count × sessions)
+  const classStats = [
+    {% for cls in class_stats %}
+    {
+      name: "{{ cls.name }}",
+      presentRate: {{ cls.present_rate }},
+      absentRate: {{ cls.absent_rate }},
+      presentCount: {{ cls.present_count }},
+      absentCount: {{ cls.absent_count }},
+      studentCount: {{ cls.student_count }},
+      sessionCount: {{ cls.session_count }},
+      expected: {{ cls.expected }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+  
+  // Sort and get top 10
+  const topClasses = [...classStats]
+    .sort((a, b) => b.presentRate - a.presentRate)
+    .slice(0, 10);
+  
+  const lowClasses = [...classStats]
+    .sort((a, b) => b.absentRate - a.absentRate)
+    .slice(0, 10);
+  
+  // Chart 1: Top classes with highest attendance rate
+  const ctx1 = document.getElementById('highAttendanceChart');
+  if (ctx1 && topClasses.length > 0) {
+    new Chart(ctx1, {
+      type: 'bar',
+      data: {
+        labels: topClasses.map(c => c.name),
+        datasets: [{
+          label: 'Tỷ lệ có mặt (%)',
+          data: topClasses.map(c => c.presentRate),
+          backgroundColor: 'rgba(25, 135, 84, 0.8)',
+          borderColor: '#198754',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          x: {
+            beginAtZero: true,
+            max: 100,
+            ticks: {
+              callback: function(value) { return value + '%'; }
+            }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const index = context.dataIndex;
+                const cls = topClasses[index];
+                return [
+                  'Tỷ lệ có mặt: ' + cls.presentRate + '%',
+                  'Có mặt: ' + cls.presentCount + '/' + cls.expected + ' lượt',
+                  'Sĩ số: ' + cls.studentCount + ' SV',
+                  'Số buổi: ' + cls.sessionCount + ' buổi'
+                ];
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+  
+  // Chart 2: Top classes with highest absence rate
+  const ctx2 = document.getElementById('lowAttendanceChart');
+  if (ctx2 && lowClasses.length > 0) {
+    new Chart(ctx2, {
+      type: 'bar',
+      data: {
+        labels: lowClasses.map(c => c.name),
+        datasets: [{
+          label: 'Tỷ lệ vắng (%)',
+          data: lowClasses.map(c => c.absentRate),
+          backgroundColor: 'rgba(220, 53, 69, 0.8)',
+          borderColor: '#dc3545',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          x: {
+            beginAtZero: true,
+            max: 100,
+            ticks: {
+              callback: function(value) { return value + '%'; }
+            }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const index = context.dataIndex;
+                const cls = lowClasses[index];
+                return [
+                  'Tỷ lệ vắng: ' + cls.absentRate + '%',
+                  'Vắng: ' + cls.absentCount + '/' + cls.expected + ' lượt',
+                  'Sĩ số: ' + cls.studentCount + ' SV',
+                  'Số buổi: ' + cls.sessionCount + ' buổi'
+                ];
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+  {% endif %}
+});
+</script>
+{% endblock %}

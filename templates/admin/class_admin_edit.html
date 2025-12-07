@@ -1,0 +1,37 @@
+{% extends 'layout.html' %}
+{% block title %}Sửa lớp hành chính{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h4 class="mb-0">Sửa tên lớp hành chính</h4>
+      </div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('admin.class_admins_edit', class_admin_id=class_admin.id) }}">
+          <div class="mb-3">
+            <label for="name" class="form-label">Tên lớp hành chính <span class="text-danger">*</span></label>
+            <input type="text" 
+                   class="form-control" 
+                   id="name" 
+                   name="name" 
+                   value="{{ class_admin.name }}" 
+                   required>
+          </div>
+          
+          <div class="d-flex justify-content-between">
+            <a href="{{ url_for('admin.class_admins_detail', class_admin_id=class_admin.id) }}" 
+               class="btn btn-secondary">
+              <i class="bi bi-arrow-left"></i> Hủy
+            </a>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-circle"></i> Lưu
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

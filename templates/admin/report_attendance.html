@@ -1,0 +1,414 @@
+{% extends 'layout.html' %}
+{% block title %}Báo cáo điểm danh{% endblock %}
+{% block content %}
+<h3 class="mb-3">Báo cáo điểm danh</h3>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-auto">
+    <select id="filter_semester" class="form-select" name="semester_id" onchange="this.form.submit()">
+      <option value="">-- Tất cả học kỳ --</option>
+      {% for sem in semesters %}
+      <option value="{{ sem.id }}" {% if selected_semester_id and sem.id==selected_semester_id|int %}selected{% endif %}>
+        {{ sem.name }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <select id="filter_class_section" class="form-select" name="class_section_id">
+      <option value="">-- Chọn lớp học phần --</option>
+      {% for s in sections %}
+      <option value="{{ s.id }}" {% if selected_section_id and s.id==selected_section_id|int %}selected{% endif %}>{{ s.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-primary">Lọc</button>
+  </div>
+  {% if selected_section_id %}
+  <div class="col-auto ms-auto">
+    <div class="btn-group" role="group">
+      <button type="button" class="btn btn-outline-primary active" id="btnShowTable" onclick="showView('table')">
+        <i class="bi bi-table"></i> Số liệu
+      </button>
+      <button type="button" class="btn btn-outline-primary" id="btnShowChart" onclick="showView('chart')">
+        <i class="bi bi-bar-chart-fill"></i> Biểu đồ
+      </button>
+    </div>
+  </div>
+  <div class="col-auto">
+    <a class="btn btn-success" href="{{ url_for('admin.report_attendance_export', class_section_id=selected_section_id) }}">Xuất Excel</a>
+  </div>
+  {% endif %}
+</form>
+
+{% if selected_section_id %}
+<h5 class="mb-3">Báo cáo: <strong>{{ selected_section.name if selected_section else ('Lớp ' ~ selected_section_id) }}</strong></h5>
+
+<!-- View số liệu -->
+<div id="tableView">
+<table class="excel-table">
+  <thead>
+    <tr>
+      <th>STT</th>
+      <th>MSSV</th>
+      <th>Họ tên</th>
+      {% for s in session_totals %}
+      {% if s.created %}
+      <th>Buổi {{ s.session_number }}<br><small>{{ s.time_bucket }} - {{ s.date }}</small></th>
+      {% else %}
+      <th>Buổi {{ s.session_number }}</th>
+      {% endif %}
+      {% endfor %}
+      <th>Đã điểm danh</th>
+      <th>Tổng vắng</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% if report_rows %}
+    {% for r in report_rows %}
+    <tr>
+      <td>{{ r.stt }}</td>
+      <td>{{ r.mssv }}</td>
+      <td class="name">{{ r.name }}</td>
+      {% for cell in r.cells %}
+      <td class="{% if cell == 'vắng' %}text-danger{% elif cell == 'có mặt' %}text-success{% endif %}">
+        {{ cell }}
+      </td>
+      {% endfor %}
+      <td>{{ r.present_count }}</td>
+      <td>{{ r.absent_count }}</td>
+    </tr>
+    {% endfor %}
+
+    <!-- Hàng thống kê - chỉ hiển thị nếu có buổi điểm danh -->
+    {% if session_totals and session_totals|selectattr('created')|list|length > 0 %}
+    <tr class="sub-row">
+      <td colspan="2" rowspan="2" class="stat-label align-middle">Thống kê</td>
+      <td class="highlight">vắng</td>
+      {% for s in session_totals %}
+      <td>{{ s.absent if s.created else '' }}</td>
+      {% endfor %}
+      <td colspan="2"></td>
+    </tr>
+    <tr class="sub-row">
+      <td class="highlight">có mặt</td>
+      {% for s in session_totals %}
+      <td>{{ s.present if s.created else '' }}</td>
+      {% endfor %}
+      <td colspan="2"></td>
+    </tr>
+    {% endif %}
+    {% else %}
+    <tr><td colspan="{{ 3 + course_total + 2 }}">Không có dữ liệu</td></tr>
+    {% endif %}
+  </tbody>
+</table>
+</div>
+
+<!-- View biểu đồ -->
+<div id="chartView" style="display: none;">
+  {% if report_rows %}
+  <div class="row g-3">
+    <!-- Biểu đồ tỷ lệ điểm danh tổng thể -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">Tỷ lệ điểm danh tổng thể</div>
+        <div class="card-body" style="height: 300px;">
+          <canvas id="overallChart"></canvas>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Biểu đồ theo buổi -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">Tỷ lệ vắng mặt theo buổi</div>
+        <div class="card-body" style="height: 300px;">
+          <canvas id="sessionChart"></canvas>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Biểu đồ top sinh viên vắng nhiều -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">Top sinh viên vắng nhiều nhất</div>
+        <div class="card-body" style="height: 300px;">
+          <canvas id="topAbsentChart"></canvas>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Biểu đồ xu hướng điểm danh -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          Xu hướng điểm danh qua các buổi
+          <small class="text-muted">(% sinh viên)</small>
+        </div>
+        <div class="card-body" style="height: 300px; position: relative;">
+          <canvas id="trendChart"></canvas>
+          {% if not session_totals or not session_totals|selectattr('created')|list %}
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #999;">
+            <i class="bi bi-info-circle" style="font-size: 2rem;"></i>
+            <p class="mt-2 mb-0">Chưa có buổi học nào được tạo</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-info">Không có dữ liệu để hiển thị biểu đồ</div>
+  {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+function showView(view) {
+  const tableView = document.getElementById('tableView');
+  const chartView = document.getElementById('chartView');
+  const btnTable = document.getElementById('btnShowTable');
+  const btnChart = document.getElementById('btnShowChart');
+  
+  if (view === 'table') {
+    tableView.style.display = 'block';
+    chartView.style.display = 'none';
+    btnTable.classList.add('active');
+    btnChart.classList.remove('active');
+  } else {
+    tableView.style.display = 'none';
+    chartView.style.display = 'block';
+    btnTable.classList.remove('active');
+    btnChart.classList.add('active');
+    initCharts();
+  }
+}
+
+let chartsInitialized = false;
+
+function initCharts() {
+  if (chartsInitialized) return;
+  chartsInitialized = true;
+  
+  {% if report_rows %}
+  // Debug: Log session count
+  console.log('Total sessions configured: {{ course_total }}');
+  console.log('Created sessions: {{ session_totals|selectattr("created")|list|length }}');
+  
+  // Dữ liệu từ server
+  const students = [
+    {% for r in report_rows %}
+    {
+      name: "{{ r.name }}",
+      mssv: "{{ r.mssv }}",
+      present: {{ r.present_count }},
+      absent: {{ r.absent_count }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+  
+  const sessionTotals = [
+    {% for s in session_totals %}
+    {
+      present: {{ s.present }},
+      absent: {{ s.absent }},
+      created: {{ 'true' if s.created else 'false' }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+  
+  // Tính tổng
+  const totalPresent = students.reduce((sum, s) => sum + s.present, 0);
+  const totalAbsent = students.reduce((sum, s) => sum + s.absent, 0);
+  
+  // 1. Biểu đồ tròn tổng thể
+  new Chart(document.getElementById('overallChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Có mặt', 'Vắng'],
+      datasets: [{
+        data: [totalPresent, totalAbsent],
+        backgroundColor: ['#198754', '#dc3545']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const total = totalPresent + totalAbsent;
+              const percent = ((context.parsed / total) * 100).toFixed(1);
+              return context.label + ': ' + context.parsed + ' (' + percent + '%)';
+            }
+          }
+        }
+      }
+    }
+  });
+  
+  // 2. Biểu đồ cột theo buổi (chỉ buổi đã tạo) - Tỷ lệ %
+  const createdSessions = sessionTotals.filter(s => s.created);
+  const totalStudents = students.length;
+  new Chart(document.getElementById('sessionChart'), {
+    type: 'bar',
+    data: {
+      labels: createdSessions.map((_, i) => 'Buổi ' + (sessionTotals.indexOf(sessionTotals.filter(s => s.created)[i]) + 1)),
+      datasets: [{
+        label: 'Tỷ lệ vắng (%)',
+        data: createdSessions.map(s => totalStudents > 0 ? ((s.absent / totalStudents) * 100).toFixed(1) : 0),
+        backgroundColor: '#dc3545'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        y: { 
+          beginAtZero: true, 
+          max: 100,
+          ticks: { 
+            callback: function(value) { return value + '%'; }
+          }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return 'Tỷ lệ vắng: ' + context.parsed.y + '%';
+            }
+          }
+        }
+      }
+    }
+  });
+  
+  // 3. Biểu đồ top sinh viên vắng nhiều (top 10)
+  const sortedStudents = [...students].sort((a, b) => b.absent - a.absent).slice(0, 10);
+  new Chart(document.getElementById('topAbsentChart'), {
+    type: 'bar',
+    data: {
+      labels: sortedStudents.map(s => s.name),
+      datasets: [{
+        label: 'Số buổi vắng',
+        data: sortedStudents.map(s => s.absent),
+        backgroundColor: '#dc3545'
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        x: { beginAtZero: true, ticks: { stepSize: 1 } }
+      },
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+  
+  // 4. Biểu đồ xu hướng - hiển thị tỷ lệ % thay vì số tuyệt đối
+  const trendLabels = [];
+  const trendPresentData = [];
+  const trendAbsentData = [];
+  
+  // Lấy session info từ session_totals
+  const sessionInfo = [
+    {% for s in session_totals %}
+    {
+      session_number: {{ s.session_number }},
+      time_bucket: "{{ s.time_bucket }}",
+      date: "{{ s.date }}",
+      created: {{ 'true' if s.created else 'false' }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+  
+  createdSessions.forEach((s, i) => {
+    const sessionIdx = sessionTotals.indexOf(sessionTotals.filter(x => x.created)[i]);
+    const info = sessionInfo[sessionIdx];
+    
+    // Label format: "Buổi X\n(Ngày - Ca)"
+    let label = 'Buổi ' + info.session_number;
+    if (info.date && info.time_bucket) {
+      label += '\n' + info.date + ' - ' + info.time_bucket;
+    }
+    trendLabels.push(label);
+    
+    // Tính tỷ lệ %
+    if (totalStudents > 0) {
+      trendPresentData.push(((s.present / totalStudents) * 100).toFixed(1));
+      trendAbsentData.push(((s.absent / totalStudents) * 100).toFixed(1));
+    } else {
+      trendPresentData.push(0);
+      trendAbsentData.push(0);
+    }
+  });
+  
+  new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: trendLabels,
+      datasets: [
+        {
+          label: 'Có mặt (%)',
+          data: trendPresentData,
+          borderColor: '#198754',
+          backgroundColor: 'rgba(25, 135, 84, 0.2)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 5,
+          pointHoverRadius: 7
+        },
+        {
+          label: 'Vắng (%)',
+          data: trendAbsentData,
+          borderColor: '#dc3545',
+          backgroundColor: 'rgba(220, 53, 69, 0.2)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 5,
+          pointHoverRadius: 7
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        y: { 
+          beginAtZero: true,
+          max: 100,
+          ticks: { 
+            stepSize: 10,
+            callback: function(value) { return value + '%'; }
+          }
+        }
+      },
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return context.dataset.label + ': ' + context.parsed.y + '%';
+            }
+          }
+        }
+      }
+    }
+  });
+  {% endif %}
+}
+</script>
+
+{% else %}
+<div class="alert alert-info">Vui lòng chọn một lớp học phần để xem báo cáo.</div>
+{% endif %}
+{% endblock %}

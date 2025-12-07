@@ -1,0 +1,71 @@
+{% extends 'layout.html' %}
+{% block title %}Quản lý học kỳ{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>Học kỳ</h3>
+  <a class="btn btn-primary" href="{{ url_for('admin.semester_create') }}">Thêm học kỳ</a>
+</div>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>STT</th>
+      <th>Tên học kỳ</th>
+      <th>Năm học</th>
+      <th>Ngày bắt đầu</th>
+      <th>Ngày kết thúc</th>
+      <th>Trạng thái</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for sem in semesters %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>
+        {{ sem.name }}
+        {% if sem.is_active %}
+        <span class="badge bg-success">Hiện tại</span>
+        {% endif %}
+      </td>
+      <td>{{ sem.academic_year }}</td>
+      <td>{{ sem.start_date.strftime('%d/%m/%Y') }}</td>
+      <td>{{ sem.end_date.strftime('%d/%m/%Y') }}</td>
+      <td>
+        {% if sem.is_active %}
+        <span class="badge bg-success">🟢 Đang hoạt động</span>
+        {% else %}
+        <span class="badge bg-secondary">Không hoạt động</span>
+        {% endif %}
+      </td>
+      <td class="text-end">
+        {% if not sem.is_active %}
+        <form action="{{ url_for('admin.set_active_semester', semester_id=sem.id) }}" method="post" class="d-inline">
+          <button type="submit" class="btn btn-sm btn-success" title="Đặt làm học kỳ hiện tại">
+            Kích hoạt
+          </button>
+        </form>
+        {% endif %}
+        <a class="btn btn-sm btn-secondary" href="{{ url_for('admin.semester_edit', semester_id=sem.id) }}">Sửa</a>
+        <form action="{{ url_for('admin.semester_delete', semester_id=sem.id) }}" method="post" class="d-inline"
+          onsubmit="return confirm('Xóa học kỳ này? Lưu ý: Không thể xóa nếu có lớp học phần đang sử dụng.');">
+          <button type="submit" class="btn btn-sm btn-danger">Xóa</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="7" class="text-center text-muted">Chưa có học kỳ nào</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="alert alert-info mt-4">
+  <strong>📌 Lưu ý:</strong>
+  <ul class="mb-0">
+    <li>Chỉ có một học kỳ được đặt làm "Hiện tại" tại một thời điểm</li>
+    <li>Học kỳ hiện tại sẽ được tự động chọn khi tạo lớp học phần mới</li>
+    <li>Không thể xóa học kỳ đang có lớp học phần sử dụng</li>
+  </ul>
+</div>
+{% endblock %}

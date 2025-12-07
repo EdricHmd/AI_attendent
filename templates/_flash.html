@@ -1,0 +1,59 @@
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+  {{ message }}
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<script>
+  // tự ẩn alerts sau 4s
+  (function () {
+    const AUTO_CLOSE_MS = 4000;
+    if (typeof window === 'undefined') return;
+    window.addEventListener('DOMContentLoaded', () => {
+      const alerts = document.querySelectorAll('.alert');
+      if (!alerts.length) return;
+      alerts.forEach(a => {
+        try {
+          // dùng API Bootstrap nếu có
+          if (window.bootstrap && bootstrap.Alert && typeof bootstrap.Alert.getOrCreateInstance === 'function') {
+            const instance = bootstrap.Alert.getOrCreateInstance(a);
+            setTimeout(() => instance.close(), AUTO_CLOSE_MS);
+          } else if (window.bootstrap && bootstrap.Alert && typeof bootstrap.Alert === 'function') {
+            const instance = new bootstrap.Alert(a);
+            setTimeout(() => instance.close(), AUTO_CLOSE_MS);
+          } else {
+            // fallback: remove element after fade out
+            setTimeout(() => {
+              try {
+                a.classList.remove('show');
+                // remove after CSS transition
+                setTimeout(() => a.remove(), 200);
+              } catch (e) { a.remove(); }
+            }, AUTO_CLOSE_MS);
+          }
+        } catch (e) { /* ignore */ }
+      });
+    });
+  })();
+  
+  // thêm event listener cho nút btn-close
+  document.addEventListener('DOMContentLoaded', () => {
+    const btnClose = document.querySelector('.btn-close');
+    if (btnClose) {
+      btnClose.addEventListener('click', closeAlert);
+    }
+  });
+  function closeAlert(event) {
+    const alert = event.target.closest('.alert');
+    if (alert) {
+      alert.remove();
+    }
+  }
+
+  
+</script>

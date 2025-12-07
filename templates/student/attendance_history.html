@@ -1,0 +1,261 @@
+{% extends 'layout.html' %}
+{% block title %}Lịch sử điểm danh của tôi{% endblock %}
+{% block breadcrumb_nav %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('student.dashboard') }}">Trang chủ</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Lịch sử điểm danh</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<h3>Lịch sử điểm danh</h3>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" id="filterForm">
+      <div class="row g-3 align-items-end">
+        <!-- Chọn học kỳ -->
+        <div class="col-md-4">
+          <label for="semester_id" class="form-label">Bước 1: Chọn học kỳ</label>
+          <select id="semester_id" name="semester_id" class="form-select" onchange="this.form.submit()">
+            <option value="">-- Chọn học kỳ --</option>
+            {% for sem in semesters %}
+            <option value="{{ sem.id }}" {% if selected_semester and selected_semester.id == sem.id %}selected{% endif %}>
+              {{ sem.name }}
+              {% if sem.is_active %}🔴{% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Chọn lớp học phần -->
+        <div class="col-md-5">
+          <label for="class_section_id" class="form-label">
+            Bước 2: Chọn lớp học phần
+            {% if selected_semester %}
+            <small class="text-muted">(trong {{ selected_semester.name }})</small>
+            {% endif %}
+          </label>
+          <select id="class_section_id" name="class_section_id" class="form-select" {% if not selected_semester %}disabled{% endif %}>
+            <option value="">-- Chọn lớp --</option>
+            {% for cs in class_sections %}
+            <option value="{{ cs.id }}" {% if selected_section and selected_section.id==cs.id %}selected{% endif %}>
+              {{ cs.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Nút xem -->
+        <div class="col-md-3">
+          <button class="btn btn-primary w-100" type="submit" {% if not selected_semester %}disabled{% endif %}>
+            <i class="fas fa-search me-1"></i> Xem lịch sử
+          </button>
+        </div>
+      </div>
+      
+      {% if not semesters %}
+      <div class="alert alert-info mt-3 mb-0">
+        <i class="fas fa-info-circle me-2"></i>
+        Bạn chưa đăng ký lớp học phần nào hoặc các lớp chưa được gán học kỳ.
+      </div>
+      {% elif selected_semester and not class_sections %}
+      <div class="alert alert-warning mt-3 mb-0">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        Không có lớp học phần nào trong học kỳ này.
+      </div>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+{% if selected_section %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="mb-0">Lịch sử điểm danh cho: <strong>{{ selected_section.name }}</strong></h5>
+  <div class="btn-group" role="group" aria-label="Chế độ hiển thị">
+    <input type="radio" class="btn-check" name="viewMode" id="viewTable" autocomplete="off" checked>
+    <label class="btn btn-outline-primary" for="viewTable">Bảng dữ liệu</label>
+    
+    <input type="radio" class="btn-check" name="viewMode" id="viewChart" autocomplete="off">
+    <label class="btn btn-outline-primary" for="viewChart">Biểu đồ</label>
+  </div>
+</div>
+
+<!-- Bảng dữ liệu -->
+<div id="tableView">
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th class="col-stt">STT</th>
+      <th>Buổi</th>
+      <th>Ngày</th>
+      <th>Trạng thái</th>
+      <th>Thời gian</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in sessions %}
+    <tr>
+      <td>{{ s.index }}</td>
+      <td>Buổi {{ s.session_number }}</td>
+      <td>{{ s.session_date }}</td>
+      <td>{{ s.status }}</td>
+      <td>{{ s.time }}</td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="5">Chưa có buổi điểm danh nào cho lớp này.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="mt-2">
+  <strong>Thống kê:</strong>
+  <span class="ms-3">Điểm danh: <strong class="text-success">{{ present_total }}</strong></span>
+  <span class="ms-3">Vắng: <strong class="text-danger">{{ absent_total }}</strong></span>
+</div>
+</div>
+
+<!-- Biểu đồ -->
+<div id="chartView" style="display: none;">
+  <div class="row">
+    <div class="col-lg-5">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">Biểu đồ điểm danh</div>
+        <div class="card-body d-flex justify-content-center align-items-center" style="min-height: 300px;">
+          <canvas id="attendancePieChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-7">
+      <div class="card shadow-sm">
+        <div class="card-header bg-info text-white">Thống kê chi tiết</div>
+        <div class="card-body">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <div class="p-3 bg-success bg-opacity-10 rounded">
+                <h6 class="text-muted small mb-2">Tổng số buổi có mặt</h6>
+                <h2 class="mb-0 text-success" id="presentCount">{{ present_total }}</h2>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 bg-danger bg-opacity-10 rounded">
+                <h6 class="text-muted small mb-2">Tổng số buổi vắng</h6>
+                <h2 class="mb-0 text-danger" id="absentCount">{{ absent_total }}</h2>
+              </div>
+            </div>
+          </div>
+          <hr>
+          <div class="mb-3">
+            <h6 class="text-muted small mb-2">Tổng số buổi học</h6>
+            <h3 class="mb-0" id="totalSessions">{{ sessions|length }}</h3>
+          </div>
+          <hr>
+          <div>
+            <h6 class="text-muted small mb-2">Tỷ lệ tham gia</h6>
+            <h3 class="mb-0">
+              {% if sessions|length > 0 %}
+              <span class="{% if (present_total / sessions|length * 100) >= 80 %}text-success{% elif (present_total / sessions|length * 100) >= 50 %}text-warning{% else %}text-danger{% endif %}">
+                {{ "%.1f"|format(present_total / sessions|length * 100) }}%
+              </span>
+              {% else %}
+              <span class="text-muted">0%</span>
+              {% endif %}
+            </h3>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  // Dữ liệu từ server
+  const attendanceData = {
+    present: {{ present_total }},
+    absent: {{ absent_total }},
+    total: {{ sessions|length }}
+  };
+
+  // Toggle view
+  const viewTable = document.getElementById('viewTable');
+  const viewChart = document.getElementById('viewChart');
+  const tableView = document.getElementById('tableView');
+  const chartView = document.getElementById('chartView');
+  
+  let pieChart = null;
+
+  viewTable.addEventListener('change', function() {
+    if (this.checked) {
+      tableView.style.display = 'block';
+      chartView.style.display = 'none';
+    }
+  });
+
+  viewChart.addEventListener('change', function() {
+    if (this.checked) {
+      tableView.style.display = 'none';
+      chartView.style.display = 'block';
+      if (!pieChart) {
+        initPieChart();
+      }
+    }
+  });
+
+  function initPieChart() {
+    const ctx = document.getElementById('attendancePieChart').getContext('2d');
+    
+    pieChart = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: ['Có mặt', 'Vắng'],
+        datasets: [{
+          data: [attendanceData.present, attendanceData.absent],
+          backgroundColor: [
+            'rgba(25, 135, 84, 0.8)',  // Success green
+            'rgba(220, 53, 69, 0.8)'   // Danger red
+          ],
+          borderColor: [
+            'rgba(25, 135, 84, 1)',
+            'rgba(220, 53, 69, 1)'
+          ],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              padding: 15,
+              font: {
+                size: 14
+              }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.parsed;
+                const total = attendanceData.total;
+                const percent = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                return `${label}: ${value} buổi (${percent}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+</script>
+{% else %}
+<div class="alert alert-info">Vui lòng chọn một lớp học phần để xem lịch sử điểm danh.</div>
+{% endif %}
+{% endblock %}

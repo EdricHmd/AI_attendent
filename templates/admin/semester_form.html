@@ -1,0 +1,60 @@
+{% extends 'layout.html' %}
+{% block title %}{{ 'Sửa' if semester else 'Thêm' }} học kỳ{% endblock %}
+{% block content %}
+<h3>{{ 'Sửa' if semester else 'Thêm' }} học kỳ</h3>
+<form method="post">
+  <div class="mb-3">
+    <label for="name" class="form-label">Tên học kỳ <span class="text-danger">*</span></label>
+    <input type="text" class="form-control" id="name" name="name" required 
+           value="{{ semester.name if semester else '' }}"
+           placeholder="VD: HK1 2024-2025">
+    <div class="form-text">Ví dụ: HK1 2024-2025, HK2 2025-2026</div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label for="semester_number" class="form-label">Học kỳ <span class="text-danger">*</span></label>
+      <select class="form-select" id="semester_number" name="semester_number" required>
+        <option value="">-- Chọn --</option>
+        <option value="1" {% if semester and semester.semester_number == 1 %}selected{% endif %}>Học kỳ 1</option>
+        <option value="2" {% if semester and semester.semester_number == 2 %}selected{% endif %}>Học kỳ 2</option>
+        <option value="3" {% if semester and semester.semester_number == 3 %}selected{% endif %}>Học kỳ 3 (Hè)</option>
+      </select>
+    </div>
+
+    <div class="col-md-6 mb-3">
+      <label for="academic_year" class="form-label">Năm học <span class="text-danger">*</span></label>
+      <input type="text" class="form-control" id="academic_year" name="academic_year" required 
+             value="{{ semester.academic_year if semester else '' }}"
+             placeholder="VD: 2024-2025">
+      <div class="form-text">Định dạng: YYYY-YYYY (VD: 2024-2025)</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label for="start_date" class="form-label">Ngày bắt đầu <span class="text-danger">*</span></label>
+      <input type="date" class="form-control" id="start_date" name="start_date" required 
+             value="{{ semester.start_date.strftime('%Y-%m-%d') if semester else '' }}">
+    </div>
+
+    <div class="col-md-6 mb-3">
+      <label for="end_date" class="form-label">Ngày kết thúc <span class="text-danger">*</span></label>
+      <input type="date" class="form-control" id="end_date" name="end_date" required 
+             value="{{ semester.end_date.strftime('%Y-%m-%d') if semester else '' }}">
+    </div>
+  </div>
+
+  <div class="alert alert-info">
+    <strong>💡 Thời gian học kỳ theo quy định:</strong>
+    <ul class="mb-0 mt-2">
+      <li><strong>HK1:</strong> Tháng 9 - Tháng 12 (VD: 01/09/2024 - 31/12/2024)</li>
+      <li><strong>HK2:</strong> Tháng 1 - Tháng 5 (VD: 01/01/2025 - 31/05/2025)</li>
+      <li><strong>HK3 (Hè):</strong> Tháng 6 - Tháng 8 (VD: 01/06/2025 - 31/08/2025)</li>
+    </ul>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Lưu</button>
+  <a class="btn btn-secondary" href="{{ url_for('admin.semesters_list') }}">Hủy</a>
+</form>
+{% endblock %}

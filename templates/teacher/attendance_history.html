@@ -1,0 +1,130 @@
+{% extends 'layout.html' %}
+{% block title %}Lịch sử điểm danh - {{ class_section.name }}{% endblock %}
+{% block breadcrumb_nav %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('teacher.dashboard') }}">Trang chủ</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('teacher.history_index') }}">Lịch sử</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ class_section.name }}</li>
+    </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="mb-3">
+    <h3 class="d-inline">Lịch sử điểm danh</h3>
+    <p class="text-muted mb-0 mt-2">
+        <strong>Lớp:</strong> {{ class_section.name }} | 
+        <strong>Học phần:</strong> {{ class_section.course.name if class_section.course else 'N/A' }}
+    </p>
+</div>
+<div>
+{% if sessions is defined %}
+{# Show class size next to the page title (not inside the table) #}
+<div class="mb-3">
+  <span class="badge bg-info">Sĩ số: {{ class_size if class_size is defined else '?' }}</span>
+</div>
+<table class="table table-bordered table-hover table-sm">
+  <thead class="table-light">
+    <tr>
+      <th class="text-center" style="width: 60px;">STT</th>
+      <th class="text-center" style="width: 80px;">Buổi</th>
+      <th class="text-center" style="width: 120px;">Ngày</th>
+      <th class="text-center" style="width: 100px;">Khung giờ</th>
+      <th class="text-center" style="width: 100px;">Có mặt</th>
+      <th class="text-center" style="width: 100px;">Vắng</th>
+      <th class="text-center" style="width: 100px;">Hành động</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in sessions %}
+    <tr>
+      <td class="text-center">{{ loop.index }}</td>
+      <td class="text-center"><strong>{{ s.session_number }}</strong></td>
+      <td class="text-center">{{ s.session_date.strftime('%d/%m/%Y') if s.session_date and s.session_date.strftime else s.session_date }}</td>
+      <td class="text-center">
+        {% if s.time_bucket == 'morning' %}<span class="text-warning fw-bold">Sáng</span>
+        {% elif s.time_bucket == 'afternoon' %}<span class="text-info fw-bold">Chiều</span>
+        {% elif s.time_bucket == 'evening' %}<span class="text-dark fw-bold">Tối</span>
+        {% else %}{{ s.time_bucket }}{% endif %}
+      </td>
+      <td class="text-center"><span class="text-success fw-bold">{{ s.count }}</span></td>
+      <td class="text-center"><span class="text-danger fw-bold">{{ s.absent if s.absent is defined else ( (class_size - s.count) if (class_size is defined and s.count is defined) else '') }}</span></td>
+      <td class="text-center"><a class="btn btn-sm btn-outline-primary"
+          href="{{ url_for('teacher.attendance_history', class_section_id=class_section.id) }}?session_id={{ s.id }}"><i class="bi bi-eye"></i> Xem chi tiết</a>
+      </td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="7" class="text-center text-muted py-4">Chưa có buổi điểm danh nào</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% elif session is defined and rows is defined %}
+<div class="mb-3">
+  <h4>Buổi {{ session.session_number }} - {{ session.session_date.strftime('%d/%m/%Y') if session.session_date and session.session_date.strftime else session.session_date }}
+    {% if session.time_bucket == 'morning' %}(Sáng)
+    {% elif session.time_bucket == 'afternoon' %}(Chiều)
+    {% elif session.time_bucket == 'evening' %}(Tối)
+    {% endif %}
+  </h4>
+  <p class="text-muted">
+    <strong>Sĩ số:</strong> {{ class_size if class_size is defined else '?' }} &nbsp;|&nbsp;
+    <strong>Có mặt:</strong> <span class="text-success">{{ (class_size - absent_count) if (class_size is defined and absent_count is defined) else '?' }}</span> &nbsp;|&nbsp;
+    <strong>Vắng:</strong> <span class="text-danger">{{ absent_count if absent_count is defined else 0 }}</span>
+  </p>
+</div>
+
+<table class="table table-bordered table-hover table-sm">
+  <thead class="table-light">
+    <tr>
+      <th class="text-center" style="width: 60px;">STT</th>
+      <th class="text-center" style="width: 100px;">MSSV</th>
+      <th class="text-start">Họ tên</th>
+      <th class="text-center" style="width: 120px;">Trạng thái</th>
+      <th class="text-center" style="width: 180px;">Thời gian</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td class="text-center">{{ loop.index }}</td>
+      <td class="text-center">{{ r.student_mssv }}</td>
+      <td class="text-start">{{ r.student_name }}</td>
+      <td class="text-center">
+        {% if r.start_ts %}
+          <span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> Có mặt</span>
+        {% else %}
+          <span class="text-danger fw-bold"><i class="bi bi-x-circle-fill"></i> Vắng</span>
+        {% endif %}
+      </td>
+      <td class="text-center ts" data-ts="{{ r.start_ts.isoformat() if r.start_ts else '' }}">{% if r.start_ts %}{{ r.start_ts }}{%
+        else %}<span class="text-muted">-</span>{% endif %}</td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="5" class="text-center text-muted py-4">Không có sinh viên</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  <script>
+    // Convert server timestamps to user's local time for display (time only)
+    (function () {
+      try {
+        document.querySelectorAll('td.ts').forEach(function (td) {
+          var iso = td.getAttribute('data-ts');
+          if (!iso) return;
+          var d = new Date(iso);
+          if (!isNaN(d.getTime())) {
+            // show time only (HH:MM:SS)
+            td.textContent = d.toLocaleTimeString();
+          }
+        });
+      } catch (e) { console.warn('timestamp localize failed', e); }
+    })();
+  </script>
+</table>
+{% else %}
+<div class="text-muted">Không có dữ liệu lịch sử</div>
+{% endif %}
+{% endblock %}

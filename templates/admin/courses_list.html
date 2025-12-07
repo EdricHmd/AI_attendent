@@ -1,0 +1,40 @@
+{% extends 'layout.html' %}
+{% block title %}Quản lý học phần{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>Học phần</h3>
+  <a class="btn btn-primary" href="{{ url_for('admin.courses_create') }}">Thêm</a>
+</div>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>STT</th>
+      <th>Mã</th>
+      <th>Tên</th>
+      <th>Số buổi</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for c in courses %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ c.code }}</td>
+      <td>{{ c.name }}</td>
+      <td>{{ c.number_of_sessions }}</td>
+      <td class="text-end">
+        <a class="btn btn-sm btn-secondary" href="{{ url_for('admin.courses_edit', course_id=c.id) }}">Sửa</a>
+        <form action="{{ url_for('admin.courses_delete', course_id=c.id) }}" method="post" class="d-inline"
+          onsubmit="return confirm('Xóa học phần?');">
+          <button type="submit" class="btn btn-sm btn-danger">Xóa</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="4">Chưa có học phần</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

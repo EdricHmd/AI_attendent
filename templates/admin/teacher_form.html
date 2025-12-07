@@ -1,0 +1,27 @@
+{% extends 'layout.html' %}
+{% block title %}{{ 'Sửa' if teacher else 'Thêm' }} giảng viên{% endblock %}
+{% block content %}
+<h3>{{ 'Sửa' if teacher else 'Thêm' }} giảng viên</h3>
+<form method="post">
+  <div class="mb-3">
+    <label class="form-label">Họ tên</label>
+    <input class="form-control" name="name" required value="{{ teacher.name if teacher else '' }}">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Email</label>
+    <input class="form-control" name="email" value="{{ teacher.email if teacher else '' }}">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Tài khoản</label>
+    <input class="form-control" name="username" required value="{{ teacher.user.username if teacher else '' }}">
+  </div>
+  {% if not teacher %}
+  <div class="mb-3">
+    <label class="form-label">Mật khẩu</label>
+    <input class="form-control" name="password" placeholder="mặc định password123 nếu bỏ trống">
+  </div>
+  {% endif %}
+  <button class="btn btn-primary">Lưu</button>
+  <a class="btn btn-secondary" href="{{ url_for('admin.teachers_list') }}">Hủy</a>
+</form>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends 'layout.html' %}
+{% block title %}Đăng nhập{% endblock %}
+{% block sidebar %}{% endblock %}
+{% block breadcrumb_nav %}{% endblock %}
+{% block content %}
+<style>
+  /* On the login page we don't use the left sidebar; remove the main content left margin so the card centers */
+  .app-main {
+    margin-left: 0 !important;
+  }
+</style>
+<div class="login-viewport d-flex align-items-center justify-content-center">
+  <div class="row justify-content-center w-100">
+    <div class="col-md-8">
+      <div class="card shadow-sm">
+        <div class="row g-0">
+          <div class="col-md-5 d-flex align-items-center justify-content-center login-left p-4">
+            <div class="text-center w-100">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/6/64/Logo_dhktdn.png" alt="Logo"
+                class="login-page-logo mb-3" />
+              <div class="login-caption fw-bold">HỆ THỐNG ĐIỂM DANH DAU</div>
+            </div>
+          </div>
+          <div class="col-md-7 p-4">
+            <h3 class="mb-3 text-center">Đăng nhập</h3>
+            <form method="post">
+              <div class="mb-3">
+                <label class="form-label">Tài khoản</label>
+                <input type="text" class="form-control" name="username" required placeholder="Tài khoản"
+                  title="Tài khoản">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Mật khẩu</label>
+                <input type="password" class="form-control" name="password" required placeholder="Mật khẩu"
+                  title="Mật khẩu">
+              </div>
+              <button class="btn btn-primary w-100" type="submit">Đăng nhập</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

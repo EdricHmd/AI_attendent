@@ -1,0 +1,90 @@
+{% extends 'layout.html' %}
+{% block title %}Buổi điểm danh - {{ class_section.name }}{% endblock %}
+{% block breadcrumb_nav %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('teacher.dashboard') }}">Trang chủ</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('teacher.attendance_index') }}">Điểm danh</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ class_section.name }}</li>
+        {% if class_section.semester_obj %}
+        <li class="breadcrumb-item text-muted ms-auto">
+            <i class="fas fa-calendar-alt"></i> {{ class_section.semester_obj.name }}
+        </li>
+        {% endif %}
+    </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div>
+    <h3 class="mb-0">Buổi điểm danh - {{ class_section.name }}
+        {% if sessions_count is defined and course_total is defined %}
+        <span class="h3 text-muted ms-2">({{ sessions_count }} / {{ course_total }} Buổi)</span>
+        {% endif %}
+    </h3>
+    <p class="text-muted mb-3"><strong>Học phần:</strong> {{ class_section.course.name if class_section.course else 'N/A' }}</p>
+</div>
+<div class="mb-3">
+    <!-- Navigate to the attendance UI and let that view create/start the session when requested -->
+    {% if open_session %}
+    <a class="btn btn-sm btn-outline-secondary"
+        href="{{ url_for('teacher.take_attendance', class_section_id=class_section.id) }}?session_id={{ open_session.id }}">Mở
+        buổi đang chạy (Buổi {{ open_session.session_number }})</a>
+    <button class="btn btn-sm btn-success" disabled title="Đã có buổi mở">Tạo buổi mới và bắt đầu điểm danh</button>
+    {% else %}
+    {% if sessions_count is defined and course_total is defined and sessions_count >= course_total %}
+    <button class="btn btn-sm btn-success" disabled title="Đã đạt tối đa số buổi của học phần">Tạo buổi mới và bắt đầu
+        điểm danh</button>
+    {% else %}
+    <a class="btn btn-sm btn-success"
+        href="{{ url_for('teacher.take_attendance', class_section_id=class_section.id) }}?create_session=1">Tạo buổi mới
+        và bắt đầu điểm danh</a>
+    {% endif %}
+    {% endif %}
+    <a class="btn btn-sm btn-secondary"
+        href="{{ url_for('teacher.attendance_history', class_section_id=class_section.id) }}">Xem lịch sử toàn bộ</a>
+</div>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Buổi</th>
+            <th>Ngày</th>
+            <th>Khung</th>
+            <th>Trạng thái</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for s in sessions %}
+        <tr>
+            <td>{{ s.session_number }}</td>
+            <td>{{ s.session_date }}</td>
+            <td>{{ s.time_bucket }}</td>
+            <td>
+                {% if s.ended_at %}
+                Đã kết thúc
+                {% else %}
+                Đang mở
+                {% endif %}
+            </td>
+            <td>
+                {% if not s.ended_at %}
+                <!-- open session: show start attendance button -->
+                <a class="btn btn-sm btn-primary"
+                    href="{{ url_for('teacher.take_attendance', class_section_id=class_section.id) }}?session_id={{ s.id }}">Bắt
+                    đầu điểm danh</a>
+                {% else %}
+                <!-- ended session: show history button -->
+                <a class="btn btn-sm btn-outline-secondary"
+                    href="{{ url_for('teacher.attendance_history', class_section_id=class_section.id) }}?session_id={{ s.id }}">Xem
+                    lịch sử</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5" class="text-center text-muted">Chưa có buổi điểm danh nào</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

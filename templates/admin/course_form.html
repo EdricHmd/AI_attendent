@@ -1,0 +1,24 @@
+{% extends 'layout.html' %}
+{% block title %}{{ 'Sửa' if course else 'Thêm' }} học phần{% endblock %}
+{% block content %}
+<h3>{{ 'Sửa' if course else 'Thêm' }} học phần</h3>
+<form method="post">
+  <div class="mb-3">
+    <label for="code" class="form-label">Mã học phần</label>
+    <input id="code" class="form-control" name="code" required value="{{ course.code if course else '' }}"
+      title="Mã học phần">
+  </div>
+  <div class="mb-3">
+    <label for="name" class="form-label">Tên học phần</label>
+    <input id="name" class="form-control" name="name" required value="{{ course.name if course else '' }}"
+      title="Tên học phần">
+  </div>
+  <div class="mb-3">
+    <label for="number_of_sessions" class="form-label">Số buổi</label>
+    <input id="number_of_sessions" class="form-control" name="number_of_sessions" type="number" min="1" required
+      value="{{ course.number_of_sessions if course else 6 }}" title="Số buổi của học phần">
+  </div>
+  <button type="submit" class="btn btn-primary">Lưu</button>
+  <a class="btn btn-secondary" href="{{ url_for('admin.courses_list') }}">Hủy</a>
+</form>
+{% endblock %}

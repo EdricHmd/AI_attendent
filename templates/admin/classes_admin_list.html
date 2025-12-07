@@ -1,0 +1,70 @@
+{% extends 'layout.html' %}
+{% block title %}Lớp hành chính{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>Lớp hành chính</h3>
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addClassModal">
+    Thêm
+  </button>
+</div>
+
+<!-- Modal thêm lớp -->
+<div class="modal fade" id="addClassModal" tabindex="-1" aria-labelledby="addClassModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form action="{{ url_for('admin.class_admins_create') }}" method="post">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addClassModalLabel">Thêm lớp hành chính mới</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="class_admin_name" class="form-label">Tên lớp hành chính</label>
+            <input type="text" class="form-control" id="class_admin_name" name="name" 
+                   placeholder="VD: K67-CTTT" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary">Thêm</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>STT</th>
+      <th>Tên lớp</th>
+      <th>Số sinh viên</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in class_admin_data %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ item.class_admin.name }}</td>
+      <td><span class="badge bg-info">{{ item.student_count }} sinh viên</span></td>
+      <td class="text-end">
+        <a class="btn btn-sm btn-info" 
+           href="{{ url_for('admin.class_admins_detail', class_admin_id=item.class_admin.id) }}">Chi tiết</a>
+        <a class="btn btn-sm btn-secondary" 
+           href="{{ url_for('admin.class_admins_edit', class_admin_id=item.class_admin.id) }}">Sửa</a>
+        <form action="{{ url_for('admin.class_admins_delete', class_admin_id=item.class_admin.id) }}" 
+              method="post" class="d-inline"
+              onsubmit="return confirm('Xóa lớp {{ item.class_admin.name }}?{% if item.student_count > 0 %} Lớp này còn {{ item.student_count }} sinh viên!{% endif %}');">
+          <button type="submit" class="btn btn-sm btn-danger" {% if item.student_count > 0 %}disabled{% endif %}>Xóa</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="4">Chưa có lớp hành chính</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

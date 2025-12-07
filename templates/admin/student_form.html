@@ -1,0 +1,43 @@
+{% extends 'layout.html' %}
+{% block title %}{{ 'Sửa' if student else 'Thêm' }} sinh viên{% endblock %}
+{% block content %}
+<h3>{{ 'Sửa' if student else 'Thêm' }} sinh viên</h3>
+<form method="post">
+  <div class="mb-3">
+    <label class="form-label" for="student_name">Họ tên</label>
+    <input id="student_name" class="form-control" name="name" required placeholder="Họ và tên"
+      value="{{ student.name if student else '' }}">
+  </div>
+  <div class="mb-3">
+    <label class="form-label" for="student_mssv">MSSV</label>
+    <input id="student_mssv" class="form-control" name="mssv" required placeholder="MSSV"
+      value="{{ student.mssv if student else '' }}">
+  </div>
+  <div class="mb-3">
+    <label class="form-label" for="gender">Giới tính</label>
+    <select id="gender" class="form-select" name="gender">
+      <option value="">-- Chọn --</option>
+      <option value="Nam" {% if student and student.gender=='Nam' %}selected{% endif %}>Nam</option>
+      <option value="Nữ" {% if student and student.gender=='Nữ' %}selected{% endif %}>Nữ</option>
+      <option value="Khác" {% if student and student.gender=='Khác' %}selected{% endif %}>Khác</option>
+    </select>
+  </div>
+  <div class="mb-3">
+    <label class="form-label" for="date_of_birth">Ngày sinh</label>
+    <input id="date_of_birth" class="form-control" name="date_of_birth" type="date"
+      value="{{ student.date_of_birth.strftime('%Y-%m-%d') if student and student.date_of_birth else '' }}">
+  </div>
+  <div class="mb-3">
+    <label class="form-label" for="class_admin_id">Lớp hành chính</label>
+    <select id="class_admin_id" class="form-select" name="class_admin_id">
+      <option value="">-- Chọn --</option>
+      {% for ca in class_admins %}
+      <option value="{{ ca.id }}" {% if student and student.class_admin_id==ca.id %}selected{% endif %}>{{ ca.name }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="btn btn-primary">Lưu</button>
+  <a class="btn btn-secondary" href="{% if student and student.class_admin_id %}{{ url_for('admin.class_admins_detail', class_admin_id=student.class_admin_id) }}{% else %}{{ url_for('admin.class_admins_list') }}{% endif %}">Hủy</a>
+</form>
+{% endblock %}

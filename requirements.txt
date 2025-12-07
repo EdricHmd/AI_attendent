@@ -1,0 +1,14 @@
+Flask>=3.0
+flask_sqlalchemy
+flask_login
+flask_migrate
+ultralytics
+face_recognition
+opencv-python
+numpy
+pandas
+python-dotenv
+Werkzeug
+psutil
+requests
+openpyxl

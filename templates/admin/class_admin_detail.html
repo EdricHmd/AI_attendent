@@ -1,0 +1,154 @@
+{% extends 'layout.html' %}
+{% block title %}Chi tiết lớp hành chính - {{ class_admin.name }}{% endblock %}
+{% block breadcrumb_nav %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Trang chủ</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('admin.class_admins_list') }}">Lớp hành chính</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ class_admin.name }}</li>
+    </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="mb-3">
+  <h3>Chi tiết lớp hành chính: {{ class_admin.name }}</h3>
+</div>
+
+<div class="row g-3 mb-3">
+  <!-- Thông tin chung -->
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">Thông tin chung</h5>
+        <p class="mb-1"><strong>Tên lớp:</strong> {{ class_admin.name }}</p>
+        <p class="mb-0"><strong>Tổng số sinh viên:</strong> {{ students|length }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Thêm sinh viên vào lớp -->
+  <div class="col-md-8">
+    <div class="card h-100">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Thêm sinh viên vào lớp</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+              Thêm sinh viên mới
+            </button>
+          </div>
+          
+          <div class="col-md-6">
+            <h6>Import từ file CSV/Excel</h6>
+            <form method="post" 
+                  action="{{ url_for('admin.class_admins_import_students', class_admin_id=class_admin.id) }}" 
+                  enctype="multipart/form-data" 
+                  class="d-flex gap-2">
+              <input type="file" name="file" accept=".csv,.xlsx" class="form-control" required>
+              <button type="submit" class="btn btn-primary">Import</button>
+            </form>
+            <small class="text-muted d-block mt-1">
+              File cần có các cột: <code>STT</code>, <code>MSSV</code>, <code>Họ tên</code>, <code>Giới tính</code>, <code>Ngày sinh</code>
+              • <a href="{{ url_for('static', filename='templates/enroll_template.xlsx') }}" download>Tải file mẫu Excel</a>
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal thêm sinh viên -->
+<div class="modal fade" id="addStudentModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('admin.class_admins_add_student', class_admin_id=class_admin.id) }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Thêm sinh viên vào {{ class_admin.name }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="mssv" class="form-label">MSSV <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="mssv" name="mssv" required>
+            <small class="text-muted">MSSV sẽ là tài khoản và mật khẩu đăng nhập</small>
+          </div>
+          <div class="mb-3">
+            <label for="name" class="form-label">Họ tên <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="name" name="name" required>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="gender" class="form-label">Giới tính</label>
+              <select class="form-select" id="gender" name="gender">
+                <option value="">-- Chọn --</option>
+                <option value="Nam">Nam</option>
+                <option value="Nữ">Nữ</option>
+                <option value="Khác">Khác</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="date_of_birth" class="form-label">Ngày sinh</label>
+              <input type="date" class="form-control" id="date_of_birth" name="date_of_birth">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary">Thêm</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Danh sách sinh viên -->
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <h5>Danh sách sinh viên </h5>
+  {% if students %}
+  <a href="{{ url_for('admin.class_admins_export_students', class_admin_id=class_admin.id) }}" 
+     class="btn btn-sm btn-success">
+    Export CSV
+  </a>
+  {% endif %}
+</div>
+
+<table class="table table-striped table-hover">
+  <thead>
+    <tr>
+      <th>STT</th>
+      <th>MSSV</th>
+      <th>Họ tên</th>
+      <th>Giới tính</th>
+      <th>Ngày sinh</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for student in students %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ student.mssv }}</td>
+      <td>{{ student.name }}</td>
+      <td>{{ student.gender or '-' }}</td>
+      <td>{{ student.date_of_birth.strftime('%d/%m/%Y') if student.date_of_birth else '-' }}</td>
+      <td class="text-end">
+        <form method="post" 
+              action="{{ url_for('admin.class_admins_remove_student', class_admin_id=class_admin.id, student_id=student.id) }}" 
+              class="d-inline"
+              onsubmit="return confirm('Xóa khỏi lớp?');">
+          <button type="submit" class="btn btn-sm btn-danger">Xóa khỏi lớp</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="6">Chưa có sinh viên nào trong lớp này</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends 'layout.html' %}
+{% block title %}{{ 'Sửa' if section else 'Thêm' }} lớp học phần{% endblock %}
+{% block content %}
+<h3>{{ 'Sửa' if section else 'Thêm' }} lớp học phần</h3>
+<form method="post">
+  <div class="mb-3">
+    <label class="form-label">Tên lớp</label>
+    <input class="form-control" name="name" required value="{{ section.name if section else '' }}">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Học phần</label>
+    <select class="form-select" name="course_id" required>
+      <option value="">-- Chọn --</option>
+      {% for c in courses %}
+        <option value="{{ c.id }}" {% if section and section.course_id==c.id %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Giảng viên</label>
+    <select class="form-select" name="teacher_id" required>
+      <option value="">-- Chọn --</option>
+      {% for t in teachers %}
+        <option value="{{ t.id }}" {% if section and section.teacher_id==t.id %}selected{% endif %}>{{ t.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Học kỳ</label>
+    <select class="form-select" name="semester_id">
+      <option value="">-- Chọn học kỳ --</option>
+      {% for sem in semesters %}
+        <option value="{{ sem.id }}" 
+                {% if section and section.semester_id == sem.id %}selected{% endif %}
+                {% if not section and current_semester and current_semester.id == sem.id %}selected{% endif %}>
+          {{ sem.name }}
+          {% if sem.is_active %}(🔴 Hiện tại){% endif %}
+        </option>
+      {% endfor %}
+    </select>
+    <div class="form-text">Chọn học kỳ cho lớp học phần</div>
+  </div>
+  <button type="submit" class="btn btn-primary">Lưu</button>
+  <a class="btn btn-secondary" href="{{ url_for('admin.class_sections_list') }}">Hủy</a>
+</form>
+{% endblock %}
