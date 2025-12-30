@@ -20,8 +20,7 @@ def run_git_command(cmd_args):
         result = subprocess.run(
             cmd_args, 
             capture_output=True, 
-            text=True,
-            cwd="."
+            text=True
         )
         return result.returncode, result.stdout, result.stderr
     except Exception as e:
@@ -113,6 +112,13 @@ def show_last_commit():
     print("\n" + "=" * 60)
     print("📜 COMMIT CUỐI CÙNG")
     print("=" * 60)
+    
+    # Kiểm tra có commit nào chưa
+    returncode, _, _ = run_git_command(["git", "rev-parse", "HEAD"])
+    if returncode != 0:
+        print("⚠️  Repository chưa có commit nào!")
+        return
+    
     returncode, output, _ = run_git_command(["git", "log", "-1", "--stat"])
     print(output)
     
