@@ -53,3 +53,16 @@ Kết quả sẽ lưu vào CSDL và CSV trong `static/uploads/`.
 ## Ghi chú
 - Khi import CSV sinh viên, tài khoản/mật khẩu = MSSV.
 - Ngưỡng khớp embedding mặc định 0.6.
+
+## Tài liệu bổ sung
+- [Hướng dẫn sử dụng Git](GIT_WORKFLOW.md) - Tìm hiểu cách commit đúng cách và khắc phục lỗi commit trống
+- [Khắc phục sự cố](TROUBLESHOOTING.md) - Giải quyết các vấn đề kỹ thuật thường gặp
+
+## Công cụ hữu ích
+```bash
+# Kiểm tra trạng thái trước khi commit (tránh empty commit)
+python check_commit.py
+
+# Kiểm tra commit cuối cùng có thay đổi không
+python check_commit.py --last
+```
