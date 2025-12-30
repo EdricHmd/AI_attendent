@@ -124,8 +124,6 @@ Các file thường bị ignore trong project Python:
 - `*.log` - Log files
 - `instance/` - Instance folder
 
-Lưu ý: Nếu project có cả JavaScript/Node.js, `node_modules/` cũng sẽ bị ignore.
-
 ### Lỗi 3: Không có thay đổi thực sự
 ```bash
 # Kiểm tra có thay đổi không

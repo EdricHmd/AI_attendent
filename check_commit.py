@@ -116,10 +116,9 @@ def show_last_commit():
     returncode, output, _ = run_git_command(["git", "log", "-1", "--stat"])
     print(output)
     
-    # Kiểm tra xem commit có thay đổi không
-    returncode, output, _ = run_git_command(["git", "show", "--stat", "HEAD"])
-    # Check if commit has no file changes
-    if "0 files changed" in output or ("files changed" not in output and "file changed" not in output):
+    # Kiểm tra xem commit có thay đổi file nào không
+    returncode, files_output, _ = run_git_command(["git", "diff-tree", "--no-commit-id", "--name-only", "HEAD"])
+    if returncode == 0 and not files_output.strip():
         print("\n⚠️  CẢNH BÁO: Commit này có vẻ TRỐNG (không có files thay đổi)!")
 
 def main():
