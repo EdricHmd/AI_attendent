@@ -7,12 +7,18 @@ Giúp tránh tạo empty commits
 import subprocess
 import sys
 
-def run_git_command(cmd):
-    """Chạy lệnh git và trả về output"""
+# Constants
+MAX_DISPLAYED_FILES = 10
+
+def run_git_command(cmd_args):
+    """Chạy lệnh git và trả về output
+    
+    Args:
+        cmd_args: List of command arguments (e.g., ['git', 'status'])
+    """
     try:
         result = subprocess.run(
-            cmd, 
-            shell=True, 
+            cmd_args, 
             capture_output=True, 
             text=True,
             cwd="."
@@ -28,7 +34,7 @@ def check_git_status():
     print("=" * 60)
     
     # Kiểm tra có phải Git repo không
-    returncode, _, _ = run_git_command("git rev-parse --git-dir")
+    returncode, _, _ = run_git_command(["git", "rev-parse", "--git-dir"])
     if returncode != 0:
         print("❌ Không phải Git repository!")
         return False
@@ -36,13 +42,13 @@ def check_git_status():
     # Kiểm tra trạng thái
     print("\n📋 Git Status:")
     print("-" * 60)
-    returncode, output, _ = run_git_command("git status")
+    returncode, output, _ = run_git_command(["git", "status"])
     print(output)
     
     # Kiểm tra files đã stage
     print("\n✅ Files đã stage (sẽ được commit):")
     print("-" * 60)
-    returncode, output, _ = run_git_command("git diff --cached --name-status")
+    returncode, output, _ = run_git_command(["git", "diff", "--cached", "--name-status"])
     if output.strip():
         print(output)
         has_staged = True
@@ -54,7 +60,7 @@ def check_git_status():
     # Kiểm tra files chưa stage
     print("\n⏳ Files đã thay đổi nhưng chưa stage:")
     print("-" * 60)
-    returncode, output, _ = run_git_command("git diff --name-status")
+    returncode, output, _ = run_git_command(["git", "diff", "--name-status"])
     if output.strip():
         print(output)
         print("\n💡 Để stage các files này:")
@@ -66,13 +72,13 @@ def check_git_status():
     # Kiểm tra untracked files
     print("\n📄 Files chưa được theo dõi (untracked):")
     print("-" * 60)
-    returncode, output, _ = run_git_command("git ls-files --others --exclude-standard")
+    returncode, output, _ = run_git_command(["git", "ls-files", "--others", "--exclude-standard"])
     if output.strip():
         files = output.strip().split('\n')
-        for f in files[:10]:  # Chỉ hiển thị 10 files đầu
+        for f in files[:MAX_DISPLAYED_FILES]:
             print(f"   {f}")
-        if len(files) > 10:
-            print(f"   ... và {len(files) - 10} files khác")
+        if len(files) > MAX_DISPLAYED_FILES:
+            print(f"   ... và {len(files) - MAX_DISPLAYED_FILES} files khác")
         print("\n💡 Để thêm vào Git:")
         print("   git add <file>")
     else:
@@ -82,7 +88,7 @@ def check_git_status():
     if has_staged:
         print("\n📝 Nội dung thay đổi sẽ được commit:")
         print("-" * 60)
-        returncode, output, _ = run_git_command("git diff --cached --stat")
+        returncode, output, _ = run_git_command(["git", "diff", "--cached", "--stat"])
         print(output)
     
     print("\n" + "=" * 60)
@@ -107,12 +113,13 @@ def show_last_commit():
     print("\n" + "=" * 60)
     print("📜 COMMIT CUỐI CÙNG")
     print("=" * 60)
-    returncode, output, _ = run_git_command("git log -1 --stat")
+    returncode, output, _ = run_git_command(["git", "log", "-1", "--stat"])
     print(output)
     
     # Kiểm tra xem commit có thay đổi không
-    returncode, output, _ = run_git_command("git show --stat HEAD")
-    if "0 files changed" in output or not any(char.isdigit() for char in output.split('\n')[-2]):
+    returncode, output, _ = run_git_command(["git", "show", "--stat", "HEAD"])
+    # Check if commit has no file changes
+    if "0 files changed" in output or ("files changed" not in output and "file changed" not in output):
         print("\n⚠️  CẢNH BÁO: Commit này có vẻ TRỐNG (không có files thay đổi)!")
 
 def main():

@@ -116,12 +116,15 @@ cat .gitignore
 git check-ignore -v app.db
 ```
 
-Các file thường bị ignore:
+Các file thường bị ignore trong project Python:
 - `*.pyc`, `__pycache__/` - Python compiled files
-- `.venv/`, `venv/` - Virtual environment
+- `.venv/`, `venv/`, `env/` - Virtual environment
 - `*.db`, `*.sqlite` - Database files
-- `node_modules/` - Node packages
-- `.env` - Environment variables
+- `.env` - Environment variables (chứa secrets)
+- `*.log` - Log files
+- `instance/` - Instance folder
+
+Lưu ý: Nếu project có cả JavaScript/Node.js, `node_modules/` cũng sẽ bị ignore.
 
 ### Lỗi 3: Không có thay đổi thực sự
 ```bash
